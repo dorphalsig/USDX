@@ -1,64 +1,123 @@
-name: GitRag Indexing
+ name: GitRag Indexing
+
 
 permissions:
+
   contents: read
+
   actions: write # Updated from 'workflows: write' for triggering workflow runs
 
+
 on:
+
   push:
+
     branches: [main]
+
   workflow_dispatch:
+
     inputs:
+
       full_scan:
+
         description: 'Run a full scan'
+
         required: true
+
         type: boolean
+
         default: false
 
+
 jobs:
+
   index:
+
     runs-on: ubuntu-latest
+
     outputs:
+
       exit_code: ${{ steps.indexer.outputs.exit_code }}
+
       stdout: ${{ steps.indexer.outputs.stdout }}
+
     env:
+
       BATCH_SIZE: 32
+
       DIMENSIONS: 1024
+
       GITRAG_IGNORE: ".github/**,.tx/**,debian/**,dists/**,installer/**,test/**,tools/**,icons/**,graphics/**,res/**,button.psd,get-svn-history.sh,dldlls.py,src/lib/**,src/webSDK/cURL_/**,src/webSDK/dcpcrypt2-2009/**,src/webSDK/encrypt/**,game/**"
+
       SOFT_TIMEOUT: 60
+
       DB_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+
       DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+
       EMBEDDING_BACKEND: onnx
+
       
+
    
+
     steps:
+
       - name: checkout
+
         uses: actions/checkout@v4
+
         with:
+
           fetch-depth: 0 # Required to calculate the git diff
+
           
+
       - name: Run GitRag Indexer
+
         id: indexer
+
         uses: dorphalsig/gitrag@master
+
         continue-on-error: true
+
         with:
+
           repo: ${{ github.repository }}
+
           branch: ${{ github.ref_name }} # Optional: track branch for filtering
+
           full_index: ${{ (github.event_name == 'workflow_dispatch' && inputs.full_scan) || (github.event_name == 'push' && vars.FULL_SCAN) || 'false' }}
 
+
 # Retry on timeout - dispatches new workflow with fresh 6-hour window
+
  retry-on-timeout:
+
   needs: index
+
   if: ${{ always() && inputs.full_scan && needs.index.outputs.exit_code == '75' }}
+
   runs-on: ubuntu-latest
+
   permissions:
+
     actions: write
+
   steps:
+
     - name: Retry on timeout
+
       env:
+
         REPO: ${{ github.repository }}
+
         REF: ${{ github.ref_name }}
+
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       run: |
+
         echo "Timeout detected (exit code 75). Triggering retry with full_scan=true."
-        gh workflow run .github/workflows/indexer.yaml --repo "$REPO" --ref "$REF" -f full_scan=true
+
+        gh workflow run .github/workflows/indexer.yaml --repo "$REPO" --ref "$REF" -f full_scan=true 
