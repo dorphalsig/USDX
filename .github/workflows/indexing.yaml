@@ -34,7 +34,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # Required to calculate the git diff
+          fetch-depth: 0 # Required to calculate the git diff
           
       - name: Run GitRag Indexer
         id: indexer
