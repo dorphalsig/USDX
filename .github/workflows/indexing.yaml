@@ -26,6 +26,9 @@ jobs:
       DIMENSIONS: 1024
       GITRAG_IGNORE: ".github/**,.tx/**,debian/**,dists/**,installer/**,test/**,tools/**,icons/**,graphics/**,res/**,button.psd,get-svn-history.sh,dldlls.py,src/lib/**,src/webSDK/cURL_/**,src/webSDK/dcpcrypt2-2009/**,src/webSDK/encrypt/**,game/**"
       SOFT_TIMEOUT: 60
+      DB_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      
    
     steps:
       - name: checkout
@@ -40,8 +43,6 @@ jobs:
         with:
           repo: ${{ github.repository }}
           branch: ${{ github.ref_name }} # Optional: track branch for filtering
-          database_url: ${{ secrets.TURSO_DATABASE_URL }}
-          db_auth_token: ${{ secrets.TURSO_AUTH_TOKEN }}
           full_index: ${{ (github.event_name == 'workflow_dispatch' && inputs.full_scan) || (github.event_name == 'push' && vars.FULL_SCAN) || 'false' }}
 
 # Retry on timeout - dispatches new workflow with fresh 6-hour window
