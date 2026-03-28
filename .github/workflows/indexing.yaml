@@ -13,7 +13,7 @@ on:
         description: 'Run a full scan'
         required: true
         type: boolean
-        default: true
+        default: false
 
 jobs:
   index:
@@ -28,6 +28,7 @@ jobs:
       SOFT_TIMEOUT: 60
       DB_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
       DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      EMBEDDING_BACKEND: onnx
       
    
     steps:
@@ -46,30 +47,18 @@ jobs:
           full_index: ${{ (github.event_name == 'workflow_dispatch' && inputs.full_scan) || (github.event_name == 'push' && vars.FULL_SCAN) || 'false' }}
 
 # Retry on timeout - dispatches new workflow with fresh 6-hour window
-  retry-on-timeout:
-    needs: index
-    if: failure() 
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write # Required for 'gh workflow run'
-    steps:
-      - name: Retry on timeout
-        env:
-          REPO: ${{ github.repository }}
-          REF: ${{ github.ref_name }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Map the output from the 'index' job
-          EXIT_CODE: ${{ needs.index.outputs.exit_code }}
-        run: |
-          # Directly evaluate the passed variable
-          if [ "$EXIT_CODE" == "75" ]; then
-            echo "Timeout detected (exit code 75). Triggering retry with full_scan=true."
-            gh workflow run .github/workflows/indexer.yaml \
-              --repo "$REPO" \
-              --ref "refs/heads/$REF" \
-              -f full_scan=true
-          else
-            echo "Job failed, but not due to exit code 75 (Actual code: $EXIT_CODE). Halting retry."
-            exit 0
-          fi
-        shell: bash
+ retry-on-timeout:
+  needs: index
+  if: ${{ always() && inputs.full_scan && needs.index.outputs.exit_code == '75' }}
+  runs-on: ubuntu-latest
+  permissions:
+    actions: write
+  steps:
+    - name: Retry on timeout
+      env:
+        REPO: ${{ github.repository }}
+        REF: ${{ github.ref_name }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Timeout detected (exit code 75). Triggering retry with full_scan=true."
+        gh workflow run .github/workflows/indexer.yaml --repo "$REPO" --ref "$REF" -f full_scan=true
