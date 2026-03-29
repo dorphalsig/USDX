@@ -14,7 +14,6 @@ on:
         required: true
         type: boolean
         default: false
-
 jobs:
   index:
     runs-on: ubuntu-latest
