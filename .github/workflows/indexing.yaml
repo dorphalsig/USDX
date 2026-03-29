@@ -21,10 +21,10 @@ jobs:
     outputs:
       exit_code: ${{ steps.indexer.outputs.exit_code }}
     env:
-      EMBEDDING_BATCH_SIZE: 32
+      EMBEDDING_BATCH_SIZE: 128
       EMBEDDING_DIMENSIONS: 1024
       GITRAG_IGNORE: ".github/**,.tx/**,debian/**,dists/**,installer/**,test/**,tools/**,icons/**,graphics/**,res/**,button.psd,get-svn-history.sh,dldlls.py,src/lib/**,src/webSDK/cURL_/**,src/webSDK/dcpcrypt2-2009/**,src/webSDK/encrypt/**,game/**"
-      SOFT_TIMEOUT: 60
+      SOFT_TIMEOUT: 19800 #5.5 hours
       DB_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
       DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
       EMBEDDING_BACKEND: openvino
