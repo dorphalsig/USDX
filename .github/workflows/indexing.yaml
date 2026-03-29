@@ -59,4 +59,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Timeout detected (exit code 75). Triggering retry with full_scan=true."
-          gh workflow run .github/workflows/indexer.yaml --repo "$REPO" --ref "$REF" -f full_scan=true
+          gh workflow run "${{ github.workflow }}" --repo "$REPO" --ref "$REF" -f full_scan=true
