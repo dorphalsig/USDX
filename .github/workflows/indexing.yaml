@@ -14,6 +14,7 @@ on:
         required: true
         type: boolean
         default: false
+
 jobs:
   index:
     runs-on: ubuntu-latest
@@ -27,14 +28,14 @@ jobs:
       DB_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
       DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
       EMBEDDING_BACKEND: onnx
-      
-   
+
+
     steps:
       - name: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Required to calculate the git diff
-          
+
       - name: Run GitRag Indexer
         id: indexer
         uses: dorphalsig/gitrag@master
@@ -43,20 +44,19 @@ jobs:
           repo: ${{ github.repository }}
           branch: ${{ github.ref_name }} # Optional: track branch for filtering
           full_index: ${{ (github.event_name == 'workflow_dispatch' && inputs.full_scan) || (github.event_name == 'push' && vars.FULL_SCAN) || 'false' }}
-  
 # Retry on timeout - dispatches new workflow with fresh 6-hour window
- retry-on-timeout:
-  needs: index
-  if: ${{ always() && inputs.full_scan && needs.index.outputs.exit_code == '75' }}
-  runs-on: ubuntu-latest
-  permissions:
-    actions: write
-  steps:
-    - name: Retry on timeout
-      env:
-        REPO: ${{ github.repository }}
-        REF: ${{ github.ref_name }}
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        echo "Timeout detected (exit code 75). Triggering retry with full_scan=true."
-        gh workflow run .github/workflows/indexer.yaml --repo "$REPO" --ref "$REF" -f full_scan=true 
+  retry-on-timeout:
+    needs: index
+    if: ${{ always() && inputs.full_scan && needs.index.outputs.exit_code == '75' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Retry on timeout
+        env:
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Timeout detected (exit code 75). Triggering retry with full_scan=true."
+          gh workflow run .github/workflows/indexer.yaml --repo "$REPO" --ref "$REF" -f full_scan=true
